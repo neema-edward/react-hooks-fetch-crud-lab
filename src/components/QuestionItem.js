@@ -1,23 +1,26 @@
-// src/QuestionItem.js
 import React from "react";
 
 function QuestionItem({ question, setQuestions }) {
   const { id, prompt, answers, correctIndex } = question;
 
   const handleDelete = () => {
-    console.log("Deleting question with id:", id); // Debug
+    console.log("Attempting to delete question with id:", id); // Debug
+    if (!id) {
+      console.error("Question id is undefined or null");
+      return;
+    }
     fetch(`http://localhost:4000/questions/${id}`, {
       method: "DELETE",
     })
       .then((response) => {
-        if (response.ok) {
-          console.log("Question deleted from server:", id); // Debug
-          setQuestions((prevQuestions) =>
-            prevQuestions.filter((q) => q.id !== id)
-          );
-        } else {
-          console.error("Failed to delete question:", response.status);
+        if (!response.ok) {
+          throw new Error(`DELETE failed with status: ${response.status}`);
         }
+        console.log("Question deleted from server:", id); // Debug
+        setQuestions((prevQuestions) => {
+          console.log("Filtering questions:", prevQuestions); // Debug
+          return prevQuestions.filter((q) => q.id !== id);
+        });
       })
       .catch((error) => console.error("Error deleting question:", error));
   };
@@ -32,8 +35,14 @@ function QuestionItem({ question, setQuestions }) {
       },
       body: JSON.stringify({ correctIndex: newCorrectIndex }),
     })
-      .then((response) => response.json())
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`PATCH failed with status: ${response.status}`);
+        }
+        return response.json();
+      })
       .then((updatedQuestion) => {
+        console.log("Updated question:", updatedQuestion); // Debug
         setQuestions((prevQuestions) =>
           prevQuestions.map((q) =>
             q.id === id ? { ...q, correctIndex: newCorrectIndex } : q

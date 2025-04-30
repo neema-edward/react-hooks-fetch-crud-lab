@@ -8,9 +8,18 @@ function App() {
   const [questions, setQuestions] = useState([]);
 
   useEffect(() => {
+    console.log("Fetching questions"); // Debug
     fetch("http://localhost:4000/questions")
-      .then((response) => response.json())
-      .then((data) => setQuestions(data))
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Fetch failed with status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then((data) => {
+        console.log("Fetched questions:", data); // Debug
+        setQuestions(data);
+      })
       .catch((error) => console.error("Error fetching questions:", error));
   }, []);
 
@@ -18,7 +27,7 @@ function App() {
     <main>
       <AdminNavBar onChangePage={setPage} />
       {page === "Form" ? (
-        <QuestionForm setQuestions={setQuestions} />
+        <QuestionForm setQuestions={setQuestions} setPage={setPage} />
       ) : (
         <QuestionList questions={questions} setQuestions={setQuestions} />
       )}

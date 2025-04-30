@@ -1,26 +1,58 @@
 import React, { useState } from "react";
 
-function QuestionForm(props) {
+function QuestionForm({ setQuestions, setPage }) {
   const [formData, setFormData] = useState({
     prompt: "",
-    answer1: "",
-    answer2: "",
-    answer3: "",
-    answer4: "",
+    answers: ["", "", "", ""],
     correctIndex: 0,
   });
 
-  function handleChange(event) {
-    setFormData({
-      ...formData,
-      [event.target.name]: event.target.value,
-    });
-  }
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    if (name.startsWith("answer")) {
+      const index = parseInt(name.split("-")[1]);
+      const newAnswers = [...formData.answers];
+      newAnswers[index] = value;
+      setFormData({ ...formData, answers: newAnswers });
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
+  };
 
-  function handleSubmit(event) {
-    event.preventDefault();
-    console.log(formData);
-  }
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const newQuestion = {
+      prompt: formData.prompt,
+      answers: formData.answers,
+      correctIndex: parseInt(formData.correctIndex),
+    };
+
+    console.log("Submitting new question:", newQuestion); // Debug
+    fetch("http://localhost:4000/questions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(newQuestion),
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`POST failed with status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then((createdQuestion) => {
+        console.log("Created question:", createdQuestion); // Debug
+        setQuestions((prevQuestions) => [...prevQuestions, createdQuestion]);
+        setFormData({
+          prompt: "",
+          answers: ["", "", "", ""],
+          correctIndex: 0,
+        });
+        setPage("List"); // Switch to QuestionList to show new question
+      })
+      .catch((error) => console.error("Error creating question:", error));
+  };
 
   return (
     <section>
@@ -33,44 +65,21 @@ function QuestionForm(props) {
             name="prompt"
             value={formData.prompt}
             onChange={handleChange}
+            required
           />
         </label>
-        <label>
-          Answer 1:
-          <input
-            type="text"
-            name="answer1"
-            value={formData.answer1}
-            onChange={handleChange}
-          />
-        </label>
-        <label>
-          Answer 2:
-          <input
-            type="text"
-            name="answer2"
-            value={formData.answer2}
-            onChange={handleChange}
-          />
-        </label>
-        <label>
-          Answer 3:
-          <input
-            type="text"
-            name="answer3"
-            value={formData.answer3}
-            onChange={handleChange}
-          />
-        </label>
-        <label>
-          Answer 4:
-          <input
-            type="text"
-            name="answer4"
-            value={formData.answer4}
-            onChange={handleChange}
-          />
-        </label>
+        {formData.answers.map((answer, index) => (
+          <label key={index}>
+            Answer {index + 1}:
+            <input
+              type="text"
+              name={`answer-${index}`}
+              value={answer}
+              onChange={handleChange}
+              required
+            />
+          </label>
+        ))}
         <label>
           Correct Answer:
           <select
@@ -78,10 +87,11 @@ function QuestionForm(props) {
             value={formData.correctIndex}
             onChange={handleChange}
           >
-            <option value="0">{formData.answer1}</option>
-            <option value="1">{formData.answer2}</option>
-            <option value="2">{formData.answer3}</option>
-            <option value="3">{formData.answer4}</option>
+            {formData.answers.map((answer, index) => (
+              <option key={index} value={index}>
+                {answer || `Answer ${index + 1}`}
+              </option>
+            ))}
           </select>
         </label>
         <button type="submit">Add Question</button>
