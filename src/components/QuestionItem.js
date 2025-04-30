@@ -1,3 +1,4 @@
+// src/QuestionItem.js
 import React from "react";
 
 function QuestionItem({ question, setQuestions }) {
